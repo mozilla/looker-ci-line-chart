@@ -1,0 +1,17 @@
+{
+    "label": "Line Chart with Confidence Interval",
+    "category_label": "plug-ins",
+    "branding": {
+      "tagline": "Line Chart with Confidence Interval"
+    },
+     "constants": {
+          "vis_label": {
+              "label": "Line Chart with Confidence Interval",
+          },
+          "vis_id": {
+              "label": "ci-line-chart",
+              "value_constraint": "visualization"
+          }
+      }
+  }
+  
