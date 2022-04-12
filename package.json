@@ -1,0 +1,30 @@
+{
+  "name": "looker-visualization",
+  "version": "0.0.1",
+  "description": "Line Chart with Confidence Interval for Looker",
+  "private": true,
+  "main": "",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start": "webpack-dev-server",
+    "watch": "webpack --config webpack.config.js --watch --progress",
+    "format": "prettier --ignore-path .gitignore --write '**/*.js'"
+  },
+  "author": "Mozilla",
+  "devDependencies": {
+    "@babel/core": "^7.17.9",
+    "babel-loader": "^8.2.4",
+    "css-loader": "^6.7.1",
+    "node-sass": "^7.0.1",
+    "sass-loader": "^12.6.0",
+    "style-loader": "^3.3.1",
+    "terser-webpack-plugin": "^5.3.1",
+    "webpack": "^5.72.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.8.1"
+  },
+  "dependencies": {
+    "babel": "^6.23.0",
+    "d3": "^7.4.4"
+  }
+}

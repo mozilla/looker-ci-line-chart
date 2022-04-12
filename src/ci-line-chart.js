@@ -4,12 +4,12 @@ const visualization = {
 	},
 
 	updateAsync: function(data, element, config, queryResponse, details, done){
-		var html = "Test";
-		// for(var row of data) {
-		// 	var cell = row[queryResponse.fields.dimensions[0].name];
-		// 	html += LookerCharts.Utils.htmlForCell(cell);
-		// }
-		// element.innerHTML = html;
+		var html = "testtest";
+		for(var row of data) {
+			var cell = row[queryResponse.fields.dimensions[0].name];
+			html += LookerCharts.Utils.htmlForCell(cell);
+		}
+		element.innerHTML = html;
 		done()
 	}
 };

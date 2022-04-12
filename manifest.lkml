@@ -9,6 +9,6 @@ constant: vis_label {
 visualization: {
     id: "@{vis_id}"
     label: "@{vis_label}"
-    file: "ci-line-chart.js"
+    file: "dist/ciLineChart.js"
     dependencies: []
 }
