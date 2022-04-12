@@ -7,6 +7,7 @@
 Install dependencies: `npm install`
 
 To build the visualization plugin run: `npm run build`
+
 Any changes to the source code will be automatically detected.
 
 ## Testing
@@ -17,10 +18,9 @@ All changes made locally will be reflected when selecting the _Line Chart with C
 
 This visualization has been configured by adding a new _Visualization_ through the Admin interface and setting the entry point to `https://localhost:3443/ciLineChart.js`
 
-
 ## Installation
 
-To install this plugin in Looker, go to _Marketplace_ → _Manage_ → _Install via git URL_:
+To install this plugin in Looker for use in production, go to _Marketplace_ → _Manage_ → _Install via git URL_:
 
 * Git Repository URL: `https://github.com/mozilla/looker-ci-line-chart.git`
 * Git Commit SHA: `main`
