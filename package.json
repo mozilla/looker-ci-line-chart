@@ -6,7 +6,7 @@
   "main": "",
   "scripts": {
     "build": "webpack --config webpack.config.js --mode production",
-    "start": "webpack-dev-server --mode development",
+    "start": "webpack-dev-server --mode development --watch",
     "watch": "webpack --config webpack.config.js --watch --progress --mode development",
     "format": "prettier --ignore-path .gitignore --write '**/*.js'"
   },
