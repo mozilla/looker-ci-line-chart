@@ -33,16 +33,7 @@ const vis = {
       placeholder: "Percentile Upper",
       order: 3,
       values: [],
-    },
-    group_field: {
-      type: "string",
-      label: "Field to Group By",
-      display: "select",
-      placeholder: "Branch",
-      order: 4,
-      default: undefined,
-      values: [],
-    },
+    }
   },
 
   create (element, config) {
@@ -67,11 +58,22 @@ const vis = {
     // Fill in select options based on fields available
     const dim_options = queryResponse.fields.dimensions.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
     const measure_options = queryResponse.fields.measures.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
+
+    let pivots = [];
+    let pivotFieldNames = new Set();
+    if ('pivots' in queryResponse) {
+      pivots = queryResponse.pivots.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
+    }
+
+    if (pivots.length === 0) {
+      // placeholder for when no pivots are used
+      pivotFieldNames.add("NONE");
+    }
+
     this.options.field_x.values = [...dim_options, ...measure_options];
     this.options.field_y.values = measure_options;
     this.options.ci_lower.values = measure_options;
     this.options.ci_upper.values = measure_options;
-    this.options.group_field.values = [...dim_options, ...measure_options];
     // register options with parent page to update visConfig
     this.trigger('registerOptions', this.options);
 
@@ -109,15 +111,30 @@ const vis = {
       });
       return;
     }
-    const d3data = data.map((row) => ({
-      x: new Date(row[config.field_x].value),
-      y: row[config.field_y].value,
-      CI_left: row[config.ci_lower].value,
-      CI_right: row[config.ci_upper].value,
-      group_val: config.group_field ? row[config.group_field].value : 'NONE',
-    }));
 
-    // console.log(d3data);
+    const d3data = data.flatMap((row) => {
+      if (pivots.length === 0) {
+        return {
+          x: new Date(row[config.field_x].value),
+          y: row[config.field_y].value,
+          CI_left: row[config.ci_lower].value,
+          CI_right: row[config.ci_upper].value,
+          pivot: "NONE",
+        }
+      } else {
+        let pivotEntries = Object.keys(row[config.field_y]);
+        return pivotEntries.map(p => {
+          pivotFieldNames.add(p);
+          return {
+            x: new Date(row[config.field_x].value),
+            y: row[config.field_y][p].value,
+            CI_left: row[config.ci_lower][p].value,
+            CI_right: row[config.ci_upper][p].value,
+            pivot: p
+          }
+        });
+      }
+    });
 
     // using d3.extent to do this automatically, but leaving calcs here
     // for now in case this has some advantage...
@@ -155,20 +172,14 @@ const vis = {
     svg.append("g").call(d3.axisLeft(y));
 
     // Setup lines for each group
-    // TODO: dynamic lookup of the grouping field
-    let groups = ['NONE'];
-    if (config.group_field) {
-      const allGroups = data.map((d) => d[config.group_field].value);
-      groups = [...new Set(allGroups)]; // unique only
-    }
 
     // TODO: dynamic color range (user configurable?)
     // const color = d3.scaleOrdinal()
     // 	.domain(groups).range(['#cce5df68', '#ff000068']);
 
-    groups.forEach((group, idx) => {
+    Array.from(pivotFieldNames).forEach((group, idx) => {
       // Filter data to the current group
-      const subData = d3data.filter((d) => d.group_val === group);
+      const subData = d3data.filter((d) => d.pivot === group);
 
       // console.log(subData);
 
