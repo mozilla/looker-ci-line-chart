@@ -39,7 +39,7 @@ const vis = {
   create (element, config) {
     // TODO: styles in here?
     // TODO: move some general setup to this fn?
-    this.svg = d3.select("#vis").append("svg")
+    this.svg = d3.select("#vis").append("svg");
   },
 
   updateAsync (data, element, config, queryResponse, details, done) {
@@ -94,7 +94,7 @@ const vis = {
       .attr("height", "100%")
       .append("g")
       .attr("transform", `translate(${margin.left},-${margin.bottom})`); // room for axis labels
-
+      
     // const dimensions = queryResponse.fields.dimension_like;
     // const measure = queryResponse.fields.measure_like[0];
 
@@ -151,7 +151,7 @@ const vis = {
     // console.log(`Y: [${minY}, ${maxY}]`);
 
     // Add X axis --> it is a date format
-    const x = d3
+    const xScale = d3
       .scaleTime()
       // .domain([minX, maxX]).nice()
       .domain(d3.extent(d3data, (d) => d.x))
@@ -160,16 +160,16 @@ const vis = {
     svg
       .append("g")
       .attr("transform", `translate(0, ${height})`)
-      .call(d3.axisBottom(x));
+      .call(d3.axisBottom(xScale));
 
     // Add Y axis
-    const y = d3
+    const yScale = d3
       .scaleLinear()
       .domain([minY, maxY])
       .nice()
       // .domain(d3.extent(d3data, d => d.y)).nice()
       .range([height, 0]);
-    svg.append("g").call(d3.axisLeft(y));
+    svg.append("g").call(d3.axisLeft(yScale));
 
     // Setup lines for each group
 
@@ -195,9 +195,9 @@ const vis = {
           "d",
           d3
             .area()
-            .x((d) => x(d.x))
-            .y0((d) => y(d.CI_right))
-            .y1((d) => y(d.CI_left))
+            .x((d) => xScale(d.x))
+            .y0((d) => yScale(d.CI_right))
+            .y1((d) => yScale(d.CI_left))
         );
 
       // Add the line
@@ -212,10 +212,75 @@ const vis = {
           "d",
           d3
             .line()
-            .x((d) => x(d.x))
-            .y((d) => y(d.y))
+            .x((d) => xScale(d.x))
+            .y((d) => yScale(d.y))
         );
     });
+
+    
+
+    // functions for displaying the hover tooltip
+    const X = d3data.map(d => d.x);
+    const Y = d3data.map(d => d.y);
+    const Lower = d3data.map(d => d.CI_left);
+    const Upper = d3data.map(d => d.CI_right);
+    const P = d3data.map(d => d.pivot);
+    const I = d3.range(X.length);
+    const O = d3data.map(d => d);
+
+    const formatDate = xScale.tickFormat(null, "%b %-d, %Y");
+    const formatVal = yScale.tickFormat(200);
+
+    const title = (i) => (pivots.length === 0
+      ? `${formatDate(X[i])}\n${formatVal(Lower[i])} <= ${formatVal(Y[i])} <= ${formatVal(Upper[i])}`
+      : `${formatDate(X[i])}\n${formatVal(Lower[i])} <= ${formatVal(Y[i])} <= ${formatVal(Upper[i])}\n${P[i]}`);
+    
+    const tooltip = svg.append("g")
+      .style("pointer-events", "none");
+    
+    const pointermoved = (event) => {
+      const [xm, ym] = d3.pointer(event);
+      // const i = d3.bisectCenter(X, xScale.invert(d3.pointer(event)[0]));
+      const i = d3.least(I, i => Math.hypot(xScale(X[i]) - xm, yScale(Y[i]) - ym)); // closest point
+      tooltip.style("display", null);
+      tooltip.attr("transform", `translate(${xScale(X[i])},${yScale(Y[i])})`);
+
+      // console.log(`TOOLTIP: ${i} => (${xScale(X[i])}, ${yScale(Y[i])})\n${formatDate(X[i])}\n${formatVal(Y[i])}`);
+
+      const path = tooltip.selectAll("path")
+        .data([,])
+        .join("path")
+          .attr("fill", "white")
+          .attr("stroke", "black");
+
+      // format tooltip
+      const text = tooltip.selectAll("text")
+        .data([,])
+        .join("text")
+        .call(text => text
+          .selectAll("tspan")
+          .data(`${title(i)}`.split(/\n/))
+          .join("tspan")
+            .attr("x", 0)
+            .attr("y", (_, i) => `${i * 0.9}em`)
+            .attr("font-weight", (_, i) => i ? null : "bold")
+            .text(d => d));
+
+      const {x, y, width: w, height: h} = text.node().getBBox();
+      text.attr("transform", `translate(${-w / 2},${15 - y})`);
+      path.attr("d", `M${-w / 2 - 10},5H-5l5,-5l5,5H${w / 2 + 10}v${h + 20}h-${w + 20}z`);
+      svg.property("value", O[i]).dispatch("input", {bubbles: true});
+    };
+
+    const pointerleft = () => {
+      tooltip.style("display", "none");
+      svg.node().value = null;
+      svg.dispatch("input", {bubbles: true});
+    };
+
+    svg.on("pointerenter pointermove", pointermoved)
+      .on("pointerleave", pointerleft)
+      .on("touchstart", e => e.preventDefault());
 
     done();
   },
