@@ -1,4 +1,34 @@
-import * as d3 from "d3";
+import {
+  Chart,
+  LineElement,
+  PointElement,
+  LineController,
+  LinearScale,
+  CategoryScale,
+  LogarithmicScale,
+  TimeScale,
+  Filler,
+  Legend,
+  Title,
+  Tooltip,
+  SubTitle
+} from 'chart.js';
+import 'chartjs-adapter-luxon';
+
+Chart.register(
+  LineElement,
+  PointElement,
+  LineController,
+  LinearScale,
+  CategoryScale,
+  LogarithmicScale,
+  TimeScale,
+  Filler,
+  Legend,
+  Title,
+  Tooltip,
+  SubTitle
+);
 
 const vis = {
   options: {
@@ -39,7 +69,8 @@ const vis = {
   create (element, config) {
     // TODO: styles in here?
     // TODO: move some general setup to this fn?
-    this.svg = d3.select("#vis").append("svg")
+
+    
   },
 
   updateAsync (data, element, config, queryResponse, details, done) {
@@ -70,36 +101,18 @@ const vis = {
       pivotFieldNames.add("NONE");
     }
 
+    // create map from full name to friendly/short name for fields
+    const optionsToFriendly = {};
+    [...queryResponse.fields.dimensions, ...queryResponse.fields.measures].forEach(d => {
+      optionsToFriendly[d.name] = d.label_short;
+    });
+
     this.options.field_x.values = [...dim_options, ...measure_options];
     this.options.field_y.values = measure_options;
     this.options.ci_lower.values = measure_options;
     this.options.ci_upper.values = measure_options;
     // register options with parent page to update visConfig
     this.trigger('registerOptions', this.options);
-
-    // console.log(data);
-    // console.log(queryResponse);
-    const width = element.clientWidth;
-    const height = element.clientHeight;
-    const margin = {
-      top: 10,
-      right: 10,
-      bottom: 50,
-      left: 50,
-    };
-
-    const svg = this.svg
-      .html('')
-      .attr("width", "100%")
-      .attr("height", "100%")
-      .append("g")
-      .attr("transform", `translate(${margin.left},-${margin.bottom})`); // room for axis labels
-
-    // const dimensions = queryResponse.fields.dimension_like;
-    // const measure = queryResponse.fields.measure_like[0];
-
-    // console.log(dimensions);
-    // console.log(measure);
 
     // TODO: dynamically get the correct fields from the data
     // 	(the user should be able to select these fields from the Gear menu
@@ -136,86 +149,119 @@ const vis = {
       }
     });
 
-    // using d3.extent to do this automatically, but leaving calcs here
-    // for now in case this has some advantage...
-    // Calculate X domain
-    // const dataX = d3data.map(d => d.x);
-    // const minX = Math.floor(Math.min(...dataX));
-    // const maxX = Math.ceil(Math.max(...dataX));
+    // setup canvas
+    const width = element.clientWidth;
+    const height = element.clientHeight;
+    const margin = {
+      top: 50,
+      right: 50,
+      bottom: 50,
+      left: 50,
+    };
 
-    // Y domain should use CI bounds (left/lower for min, right/upper for max)
-    const minY = Math.floor(Math.min(...d3data.map((d) => d.CI_left)));
-    const maxY = Math.ceil(Math.max(...d3data.map((d) => d.CI_right)));
-
-    // console.log(`X: [${minX}, ${maxX}]`);
-    // console.log(`Y: [${minY}, ${maxY}]`);
-
-    // Add X axis --> it is a date format
-    const x = d3
-      .scaleTime()
-      // .domain([minX, maxX]).nice()
-      .domain(d3.extent(d3data, (d) => d.x))
-      .nice()
-      .range([0, width]);
-    svg
-      .append("g")
-      .attr("transform", `translate(0, ${height})`)
-      .call(d3.axisBottom(x));
-
-    // Add Y axis
-    const y = d3
-      .scaleLinear()
-      .domain([minY, maxY])
-      .nice()
-      // .domain(d3.extent(d3data, d => d.y)).nice()
-      .range([height, 0]);
-    svg.append("g").call(d3.axisLeft(y));
+    const ctxElem = `<canvas id="vis-chart" width="${width}" height="${height}"></canvas>`;
+    element.innerHTML = ctxElem;
+    this.ctx = document.getElementById('vis-chart');
 
     // Setup lines for each group
-
-    // TODO: dynamic color range (user configurable?)
-    // const color = d3.scaleOrdinal()
-    // 	.domain(groups).range(['#cce5df68', '#ff000068']);
+    const cfg = {
+      type: 'line',
+      data: {
+        datasets: []
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              tooltipFormat: 'DD T'
+            },
+            title: {
+              display: true,
+              text: optionsToFriendly[config.field_x]
+            }
+          },
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 16,
+              boxHeight: 2
+            }
+          }
+        },
+        interaction: {
+          mode: 'index', // show all Y values for current X
+          intersect: false // hover anywhere to show tooltip (not just on a point)
+        }
+      }
+    };
 
     Array.from(pivotFieldNames).forEach((group, idx) => {
       // Filter data to the current group
-      const subData = d3data.filter((d) => d.pivot === group);
+      const groupData = d3data.filter((d) => d.pivot === group);
 
-      // console.log(subData);
-
-      // Show confidence interval
-      svg
-        .append("path")
-        .datum(subData)
-        // .attr("fill", "#cce5df")
-        // .attr("fill", d => color(d.key))
-        .attr("fill", idx === 0 ? "#cce5df68" : "#ff000068")
-        .attr("stroke", "none")
-        .attr(
-          "d",
-          d3
-            .area()
-            .x((d) => x(d.x))
-            .y0((d) => y(d.CI_right))
-            .y1((d) => y(d.CI_left))
-        );
-
-      // Add the line
-      svg
-        .append("path")
-        .datum(subData)
-        .attr("fill", "none")
-        // .attr("stroke", "steelblue")
-        .attr("stroke", idx === 0 ? "steelblue" : "#881122")
-        .attr("stroke-width", 1.5)
-        .attr(
-          "d",
-          d3
-            .line()
-            .x((d) => x(d.x))
-            .y((d) => y(d.y))
-        );
+      cfg.data.datasets.push({
+        label: `Lower-${group}`,
+        data: groupData,
+        fill: 1,
+        parsing: {
+          yAxisKey: 'CI_left'
+        },
+        borderColor: idx === 0 ? 'rgba(0,0,200,1)' : 'rgba(200,0,0,1)',
+        backgroundColor: idx === 0 ? 'rgba(0,0,200,0.5)' : 'rgba(200,0,0,0.5)',
+        elements: {
+          line: {
+            borderWidth: 0
+          },
+          point: {
+            radius: 0,
+            hitRadius: 4,
+          }
+        }
+      });
+      cfg.data.datasets.push({
+        label: `${optionsToFriendly[config.field_y]}-${group}`,
+        data: groupData,
+        fill: false,
+        parsing: {
+          yAxisKey: 'y'
+        },
+        borderColor: idx === 0 ? 'rgba(0,0,200,1)' : 'rgba(200,0,0,1)',
+        backgroundColor: idx === 0 ? 'rgba(0,0,200,0.5)' : 'rgba(200,0,0,0.5)',
+        elements: {
+          line: {
+            borderWidth: 2
+          },
+          point: {
+            radius: 0,
+            hitRadius: 4,
+          }
+        }
+      });
+      cfg.data.datasets.push({
+        label: `Upper-${group}`,
+        data: groupData,
+        fill: 1,
+        parsing: {
+          yAxisKey: 'CI_right'
+        },
+        borderColor: idx === 0 ? 'rgba(0,0,200,1)' : 'rgba(200,0,0,1)',
+        backgroundColor: idx === 0 ? 'rgba(0,0,200,0.5)' : 'rgba(200,0,0,0.5)',
+        elements: {
+          line: {
+            borderWidth: 0
+          },
+          point: {
+            radius: 0,
+            hitRadius: 4,
+          }
+        }
+      });
     });
+
+    const myChart = new Chart(this.ctx, cfg);
 
     done();
   },
