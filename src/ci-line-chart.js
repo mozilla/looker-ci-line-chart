@@ -73,40 +73,26 @@ const vis = {
       order: 4,
       values: [],
     },
-    // Styles
+    // Series
     color_palette: {
-      section: "Styles",
+      section: "Series",
       type: "array",
       label: "Color Palette",
       display: "colors",
-    //   default: [ // these are the defaults from Looker
-    //     '#3FE1B0',
-    //     '#0060E0',
-    //     '#9059FF',
-    //     '#B933E1',
-    //     '#FF2A8A',
-    //     '#FF505F',
-    //     '#FF7139',
-    //     '#FFA537',
-    //     '#005E5D',
-    //     '#073072',
-    //     '#7F165B',
-    //     '#A7341F',
-    //  ]
-    },
-    primary_color: {
-      section: "Styles",
-      type: "array",
-      label: "Primary Color",
-      display: "color",
-      // default: ['#3FE1B0'],
-    },
-    secondary_color: {
-      section: "Styles",
-      type: "array",
-      label: "Secondary Color",
-      display: "color",
-      // default: ['#FF7139'],
+      default: [ // these are the defaults from Looker
+        '#3FE1B0',
+        '#0060E0',
+        '#9059FF',
+        '#B933E1',
+        '#FF2A8A',
+        '#FF505F',
+        '#FF7139',
+        '#FFA537',
+        '#005E5D',
+        '#073072',
+        '#7F165B',
+        '#A7341F',
+     ]
     }
   },
 
@@ -163,7 +149,7 @@ const vis = {
     this.options.field_y.values = measure_options;
     this.options.ci_lower.values = measure_options;
     this.options.ci_upper.values = measure_options;
-    
+
     // TODO: dynamically get the correct fields from the data
     // 	(the user should be able to select these fields from the Gear menu
     //	 and we retrieve them here)
@@ -179,9 +165,6 @@ const vis = {
       config.ci_lower = config.ci_lower || Object.values(measure_options[1])[0];
       config.ci_upper = config.ci_upper || Object.values(measure_options[2])[0];
     }
-
-    // register options with parent page to update visConfig
-    this.trigger('registerOptions', this.options);
 
     const d3data = data.flatMap((row) => {
       if (pivots.length === 0) {
@@ -207,6 +190,25 @@ const vis = {
       }
     });
 
+    // add color change option for every line
+    Array.from(pivotFieldNames).forEach((group, idx) => {
+      if (typeof this.options.color_palette.default !== 'undefined') {
+        const defaultColor = this.options.color_palette.default[idx % this.options.color_palette.default.length];
+        const label_text = group == 'NONE' ? 'Series' : group;
+
+        this.options[group] = {
+          section: "Series",
+          type: "string",
+          label: label_text,
+          display: "color",
+          default: defaultColor
+        };
+      }
+    });
+
+    // register options with parent page to update visConfig
+    this.trigger('registerOptions', this.options);
+
     // setup canvas
     const width = element.clientWidth;
     const height = element.clientHeight;
@@ -226,12 +228,17 @@ const vis = {
           x: {
             type: 'time',
             time: {
-              tooltipFormat: 'DD T'
+              tooltipFormat: 'DD',
+              unit: 'day',
+              round: 'day',
             },
             title: {
               display: true,
               text: optionsToFriendly[config.field_x]
-            }
+            },
+            grid: {
+              display: false
+            },
           },
           y: {
             type: config.log_scale ? 'logarithmic' : 'linear',
@@ -256,16 +263,17 @@ const vis = {
     Array.from(pivotFieldNames).forEach((group, idx) => {
       // Filter data to the current group
       const groupData = d3data.filter((d) => d.pivot === group);
+      const groupLabel = group !== 'NONE' ? ` - ${group}` : '';
 
       cfg.data.datasets.push({
-        label: `Lower-${group}`,
+        label: `Lower ${groupLabel}`,
         data: groupData,
         fill: 1,
         parsing: {
           yAxisKey: 'CI_left'
         },
-        borderColor: idx === 0 ? 'rgba(0,0,200,1)' : 'rgba(200,0,0,1)',
-        backgroundColor: idx === 0 ? 'rgba(0,0,200,0.5)' : 'rgba(200,0,0,0.5)',
+        backgroundColor: `${config[group]}33`,
+        borderColor: config[group],
         elements: {
           line: {
             borderWidth: 0
@@ -277,14 +285,14 @@ const vis = {
         }
       });
       cfg.data.datasets.push({
-        label: `${optionsToFriendly[config.field_y]}-${group}`,
+        label: `${optionsToFriendly[config.field_y]} ${groupLabel}`,
         data: groupData,
         fill: false,
         parsing: {
           yAxisKey: 'y'
         },
-        borderColor: idx === 0 ? 'rgba(0,0,200,1)' : 'rgba(200,0,0,1)',
-        backgroundColor: idx === 0 ? 'rgba(0,0,200,0.5)' : 'rgba(200,0,0,0.5)',
+        borderColor: config[group],
+        backgroundColor: config[group],
         elements: {
           line: {
             borderWidth: 2
@@ -296,14 +304,14 @@ const vis = {
         }
       });
       cfg.data.datasets.push({
-        label: `Upper-${group}`,
+        label: `Upper ${groupLabel}`,
         data: groupData,
         fill: 1,
         parsing: {
           yAxisKey: 'CI_right'
         },
-        borderColor: idx === 0 ? 'rgba(0,0,200,1)' : 'rgba(200,0,0,1)',
-        backgroundColor: idx === 0 ? 'rgba(0,0,200,0.5)' : 'rgba(200,0,0,0.5)',
+        backgroundColor: `${config[group]}33`,
+        borderColor: config[group],
         elements: {
           line: {
             borderWidth: 0
