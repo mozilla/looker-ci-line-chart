@@ -39,7 +39,7 @@ const vis = {
   create (element, config) {
     // TODO: styles in here?
     // TODO: move some general setup to this fn?
-    this.svg = d3.select("#vis").append("svg");
+    this.svg = d3.select("#vis").append("svg").attr("overflow", "visible");
   },
 
   updateAsync (data, element, config, queryResponse, details, done) {
@@ -58,6 +58,11 @@ const vis = {
     // Fill in select options based on fields available
     const dim_options = queryResponse.fields.dimensions.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
     const measure_options = queryResponse.fields.measures.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
+
+    const optionsToFriendly = {};
+    [...queryResponse.fields.dimensions, ...queryResponse.fields.measures].forEach(d => {
+      optionsToFriendly[d.name] = d.label_short;
+    });
 
     let pivots = [];
     let pivotFieldNames = new Set();
@@ -78,12 +83,12 @@ const vis = {
     this.trigger('registerOptions', this.options);
 
     // console.log(data);
-    // console.log(queryResponse);
+    console.log(queryResponse.fields);
     const width = element.clientWidth;
     const height = element.clientHeight;
     const margin = {
-      top: 10,
-      right: 10,
+      top: 50,
+      right: 50,
       bottom: 50,
       left: 50,
     };
@@ -156,7 +161,7 @@ const vis = {
       // .domain([minX, maxX]).nice()
       .domain(d3.extent(d3data, (d) => d.x))
       .nice()
-      .range([0, width]);
+      .range([0, width - margin.left - margin.right]);
     svg
       .append("g")
       .attr("transform", `translate(0, ${height})`)
@@ -168,7 +173,7 @@ const vis = {
       .domain([minY, maxY])
       .nice()
       // .domain(d3.extent(d3data, d => d.y)).nice()
-      .range([height, 0]);
+      .range([height, margin.top]);
     svg.append("g").call(d3.axisLeft(yScale));
 
     // Setup lines for each group
@@ -179,14 +184,14 @@ const vis = {
 
     Array.from(pivotFieldNames).forEach((group, idx) => {
       // Filter data to the current group
-      const subData = d3data.filter((d) => d.pivot === group);
+      const groupData = d3data.filter((d) => d.pivot === group);
 
-      // console.log(subData);
+      // console.log(groupData);
 
       // Show confidence interval
       svg
         .append("path")
-        .datum(subData)
+        .datum(groupData)
         // .attr("fill", "#cce5df")
         // .attr("fill", d => color(d.key))
         .attr("fill", idx === 0 ? "#cce5df68" : "#ff000068")
@@ -203,11 +208,11 @@ const vis = {
       // Add the line
       svg
         .append("path")
-        .datum(subData)
+        .datum(groupData)
         .attr("fill", "none")
         // .attr("stroke", "steelblue")
         .attr("stroke", idx === 0 ? "steelblue" : "#881122")
-        .attr("stroke-width", 1.5)
+        .attr("stroke-width", 2)
         .attr(
           "d",
           d3
@@ -217,7 +222,7 @@ const vis = {
         );
     });
 
-    
+    console.log(optionsToFriendly);
 
     // functions for displaying the hover tooltip
     const X = d3data.map(d => d.x);
@@ -228,18 +233,19 @@ const vis = {
     const I = d3.range(X.length);
     const O = d3data.map(d => d);
 
-    const formatDate = xScale.tickFormat(null, "%b %-d, %Y");
+    const formatDate = xScale.tickFormat(null, "%Y-%m-%d");
     const formatVal = yScale.tickFormat(200);
 
     const title = (i) => (pivots.length === 0
-      ? `${formatDate(X[i])}\n${formatVal(Lower[i])} <= ${formatVal(Y[i])} <= ${formatVal(Upper[i])}`
-      : `${formatDate(X[i])}\n${formatVal(Lower[i])} <= ${formatVal(Y[i])} <= ${formatVal(Upper[i])}\n${P[i]}`);
+      ? `${optionsToFriendly[config.field_x]}\n${formatDate(X[i])}\n${optionsToFriendly[config.field_y]}\n${formatVal(Lower[i])} ≤ ${formatVal(Y[i])} ≤ ${formatVal(Upper[i])}`
+      : `${optionsToFriendly[config.field_x]}\n${formatDate(X[i])}\n${optionsToFriendly[config.field_y]}\n${formatVal(Lower[i])} ≤ ${formatVal(Y[i])} ≤ ${formatVal(Upper[i])}\n\n${P[i]}`);
     
     const tooltip = svg.append("g")
       .style("pointer-events", "none");
     
     const pointermoved = (event) => {
       const [xm, ym] = d3.pointer(event);
+      
       // const i = d3.bisectCenter(X, xScale.invert(d3.pointer(event)[0]));
       const i = d3.least(I, i => Math.hypot(xScale(X[i]) - xm, yScale(Y[i]) - ym)); // closest point
       tooltip.style("display", null);
@@ -262,8 +268,10 @@ const vis = {
           .data(`${title(i)}`.split(/\n/))
           .join("tspan")
             .attr("x", 0)
-            .attr("y", (_, i) => `${i * 0.9}em`)
-            .attr("font-weight", (_, i) => i ? null : "bold")
+            .attr("y", (_, i) => `${i * 1.2}em`)
+            .attr("font-weight", (_, i) => i % 2 ? "bold" : null)
+            .attr("font-family", "Roboto, Sans-Serif")
+            .attr("font-size", "0.8rem")
             .text(d => d));
 
       const {x, y, width: w, height: h} = text.node().getBBox();
@@ -278,7 +286,8 @@ const vis = {
       svg.dispatch("input", {bubbles: true});
     };
 
-    svg.on("pointerenter pointermove", pointermoved)
+    svg.style("overflow", "visible")
+      .on("pointerenter pointermove", pointermoved)
       .on("pointerleave", pointerleft)
       .on("touchstart", e => e.preventDefault());
 
