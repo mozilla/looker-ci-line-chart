@@ -32,36 +32,45 @@ Chart.register(
 
 const vis = {
   options: {
+    // Plot
     field_x: {
+      section: "Plot",
       type: "string",
       label: "X Axis Field",
       display: "select",
-      placeholder: "Submission Date",
       order: 0,
       values: [],
     },
     field_y: {
+      section: "Plot",
       type: "string",
       label: "Y Axis Field",
       display: "select",
-      placeholder: "Percentile",
       order: 1,
       values: [],
     },
+    log_scale: {
+      section: "Plot",
+      type: "boolean",
+      label: "Use Logarithmic Scale?",
+      display: "toggle",
+      order: 2,
+      default: false,
+    },
     ci_lower: {
+      section: "Plot",
       type: "string",
       label: "Confidence Interval Lower",
       display: "select",
-      placeholder: "Percentile Lower",
-      order: 2,
+      order: 3,
       values: [],
     },
     ci_upper: {
+      section: "Plot",
       type: "string",
       label: "Confidence Interval Upper",
       display: "select",
-      placeholder: "Percentile Upper",
-      order: 3,
+      order: 4,
       values: [],
     }
   },
@@ -152,12 +161,6 @@ const vis = {
     // setup canvas
     const width = element.clientWidth;
     const height = element.clientHeight;
-    const margin = {
-      top: 50,
-      right: 50,
-      bottom: 50,
-      left: 50,
-    };
 
     const ctxElem = `<canvas id="vis-chart" width="${width}" height="${height}"></canvas>`;
     element.innerHTML = ctxElem;
@@ -180,6 +183,9 @@ const vis = {
               display: true,
               text: optionsToFriendly[config.field_x]
             }
+          },
+          y: {
+            type: config.log_scale ? 'logarithmic' : 'linear',
           },
         },
         plugins: {
