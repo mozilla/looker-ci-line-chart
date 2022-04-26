@@ -72,6 +72,41 @@ const vis = {
       display: "select",
       order: 4,
       values: [],
+    },
+    // Styles
+    color_palette: {
+      section: "Styles",
+      type: "array",
+      label: "Color Palette",
+      display: "colors",
+    //   default: [ // these are the defaults from Looker
+    //     '#3FE1B0',
+    //     '#0060E0',
+    //     '#9059FF',
+    //     '#B933E1',
+    //     '#FF2A8A',
+    //     '#FF505F',
+    //     '#FF7139',
+    //     '#FFA537',
+    //     '#005E5D',
+    //     '#073072',
+    //     '#7F165B',
+    //     '#A7341F',
+    //  ]
+    },
+    primary_color: {
+      section: "Styles",
+      type: "array",
+      label: "Primary Color",
+      display: "color",
+      // default: ['#3FE1B0'],
+    },
+    secondary_color: {
+      section: "Styles",
+      type: "array",
+      label: "Secondary Color",
+      display: "color",
+      // default: ['#FF7139'],
     }
   },
 
@@ -94,7 +129,14 @@ const vis = {
       });
       return;
     }
-    
+    if (queryResponse.fields.measures.length < 3) {
+      this.addError({
+        title: "Not Enough Measures",
+        message: "This chart requires 3+ measures (value and lower/upper CI bounds).",
+      });
+      return;
+    }
+
     // Fill in select options based on fields available
     const dim_options = queryResponse.fields.dimensions.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
     const measure_options = queryResponse.fields.measures.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
@@ -116,23 +158,30 @@ const vis = {
       optionsToFriendly[d.name] = d.label_short;
     });
 
+    // setup config options and default values
     this.options.field_x.values = [...dim_options, ...measure_options];
     this.options.field_y.values = measure_options;
     this.options.ci_lower.values = measure_options;
     this.options.ci_upper.values = measure_options;
-    // register options with parent page to update visConfig
-    this.trigger('registerOptions', this.options);
-
+    
     // TODO: dynamically get the correct fields from the data
     // 	(the user should be able to select these fields from the Gear menu
     //	 and we retrieve them here)
     if (!(config.field_x && config.field_y && config.ci_lower && config.ci_upper)) {
-      this.addError({
-        title: "Check Config",
-        message: "This chart requires fields to be configured.",
-      });
-      return;
+      // console.log('CONFIG ERROR', config);
+      // this.addError({
+        //   title: "Check Config",
+        //   message: "This chart requires fields to be configured.",
+      // });
+      // return;
+      config.field_x = config.field_x || Object.values(dim_options[0])[0];
+      config.field_y = config.field_y || Object.values(measure_options[0])[0];
+      config.ci_lower = config.ci_lower || Object.values(measure_options[1])[0];
+      config.ci_upper = config.ci_upper || Object.values(measure_options[2])[0];
     }
+
+    // register options with parent page to update visConfig
+    this.trigger('registerOptions', this.options);
 
     const d3data = data.flatMap((row) => {
       if (pivots.length === 0) {
