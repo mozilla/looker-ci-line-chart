@@ -15,6 +15,8 @@ import {
 } from 'chart.js';
 import 'chartjs-adapter-luxon';
 
+import { handleErrors } from './common/utils';
+
 Chart.register(
   LineElement,
   PointElement,
@@ -113,6 +115,18 @@ const vis = {
 
   updateAsync (data, element, config, queryResponse, details, done) {
     this.clearErrors();
+    
+    const noErrors = handleErrors(this, queryResponse, {
+      min_pivots: 0, max_pivots: 1,
+      min_dimensions: 1, max_dimensions: 1,
+      min_measures: 3, max_measures: 3
+    });
+
+    console.log(noErrors);
+
+    if (!noErrors) {
+      return;
+    }
 
     // Throw some errors and exit if the shape of the data isn't what this chart needs.
     // TODO: more error checks
