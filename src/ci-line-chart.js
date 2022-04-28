@@ -276,7 +276,7 @@ const vis = {
       cfg.data.datasets.push({
         label: `Lower ${groupLabel}`,
         data: groupData,
-        fill: 1,
+        fill: (idx * 3) + 1, // should point to index 1 **of this group**
         parsing: {
           yAxisKey: 'CI_left'
         },
@@ -314,7 +314,7 @@ const vis = {
       cfg.data.datasets.push({
         label: `Upper ${groupLabel}`,
         data: groupData,
-        fill: 1,
+        fill: (idx * 3) + 1, // should point to index 1 **of this group**
         parsing: {
           yAxisKey: 'CI_right'
         },
