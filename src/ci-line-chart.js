@@ -55,7 +55,7 @@ const vis = {
       label: "Use Logarithmic Scale",
       display: "toggle",
       order: 2,
-      default: false,
+      default: true,
     },
     ci_lower: {
       section: "Plot",
