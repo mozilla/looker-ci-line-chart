@@ -52,7 +52,7 @@ const vis = {
     log_scale: {
       section: "Plot",
       type: "boolean",
-      label: "Use Logarithmic Scale?",
+      label: "Use Logarithmic Scale",
       display: "toggle",
       order: 2,
       default: false,
@@ -72,6 +72,14 @@ const vis = {
       display: "select",
       order: 4,
       values: [],
+    },
+    show_grid: {
+      section: "Plot",
+      type: "boolean",
+      label: "Show vertical grid lines",
+      display: "toggle",
+      order: 5,
+      default: false,
     },
     // Series
     color_palette: {
@@ -237,7 +245,7 @@ const vis = {
               text: optionsToFriendly[config.field_x]
             },
             grid: {
-              display: false
+              display: config.show_grid
             },
           },
           y: {
