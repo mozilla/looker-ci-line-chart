@@ -264,8 +264,15 @@ const vis = {
         interaction: {
           mode: 'index', // show all Y values for current X
           intersect: false // hover anywhere to show tooltip (not just on a point)
-        }
-      }
+        },
+        animation: {
+          duration: 0
+        },
+        hover: {
+          animationDuration: 0 // duration of animations when hovering an item
+        },
+        responsiveAnimationDuration: 0
+      },
     };
 
     Array.from(pivotFieldNames).forEach((group, idx) => {
