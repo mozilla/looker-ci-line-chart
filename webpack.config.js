@@ -30,6 +30,10 @@ let webpackConfig = {
   },
   devtool: "eval",
   watch: false,
+  optimization: {
+    minimize: true,
+    minimizer: [new TerserPlugin({ parallel: true })]
+  }
 };
 
 module.exports = webpackConfig;
