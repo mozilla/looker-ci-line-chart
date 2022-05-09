@@ -228,6 +228,8 @@ const vis = {
     // Setup lines for each group
     const cfg = {
       type: 'line',
+      parsing: false,
+      normalized: true,
       data: {
         datasets: []
       },
@@ -265,9 +267,7 @@ const vis = {
           mode: 'index', // show all Y values for current X
           intersect: false // hover anywhere to show tooltip (not just on a point)
         },
-        animation: {
-          duration: 0
-        },
+        animation: false,
         hover: {
           animationDuration: 0 // duration of animations when hovering an item
         },
