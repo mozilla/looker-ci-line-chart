@@ -26,7 +26,7 @@ let webpackConfig = {
   devServer: {
     compress: true,
     port: 3443,
-    https: true,
+    server: "https",
   },
   devtool: "eval",
   watch: false,

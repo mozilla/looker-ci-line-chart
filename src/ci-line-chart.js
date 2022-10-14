@@ -173,11 +173,17 @@ const vis = {
       config.ci_lower = config.ci_lower || Object.values(measure_options[1])[0];
       config.ci_upper = config.ci_upper || Object.values(measure_options[2])[0];
     }
+    const xObj = [...queryResponse.fields.dimensions, ...queryResponse.fields.measures].filter(f => f.name === config.field_x);
+    let xType = "";
+    if (xObj.length > 0) {
+      xType = xObj[0].type;
+    }
+    const xIsDate = xType.indexOf("date") >= 0 || xType.indexOf("time") >= 0;
 
     const d3data = data.flatMap((row) => {
       if (pivots.length === 0) {
         return {
-          x: new Date(row[config.field_x].value),
+          x: xIsDate ? new Date(row[config.field_x].value) : row[config.field_x].value,
           y: row[config.field_y].value,
           CI_left: row[config.ci_lower].value,
           CI_right: row[config.ci_upper].value,
@@ -188,7 +194,7 @@ const vis = {
         return pivotEntries.map(p => {
           pivotFieldNames.add(p);
           return {
-            x: new Date(row[config.field_x].value),
+            x: xIsDate ? new Date(row[config.field_x].value) : row[config.field_x].value,
             y: row[config.field_y][p].value,
             CI_left: row[config.ci_lower][p].value,
             CI_right: row[config.ci_upper][p].value,
@@ -225,6 +231,30 @@ const vis = {
     element.innerHTML = ctxElem;
     this.ctx = document.getElementById('vis-chart');
 
+    const xConfig = xIsDate ? {
+      type: 'time',
+      time: {
+        tooltipFormat: 'DD',
+        unit: 'day',
+        round: 'day',
+      },
+      title: {
+        display: true,
+        text: optionsToFriendly[config.field_x]
+      },
+      grid: {
+        display: config.show_grid
+      },
+    } : {
+      type: 'linear',
+      title: {
+        display: true,
+        text: optionsToFriendly[config.field_x]
+      },
+      grid: {
+        display: config.show_grid
+      },
+    };
     // Setup lines for each group
     const cfg = {
       type: 'line',
@@ -235,21 +265,7 @@ const vis = {
       },
       options: {
         scales: {
-          x: {
-            type: 'time',
-            time: {
-              tooltipFormat: 'DD',
-              unit: 'day',
-              round: 'day',
-            },
-            title: {
-              display: true,
-              text: optionsToFriendly[config.field_x]
-            },
-            grid: {
-              display: config.show_grid
-            },
-          },
+          x: xConfig,
           y: {
             type: config.log_scale ? 'logarithmic' : 'linear',
           },
