@@ -18,6 +18,8 @@ All changes made locally will be reflected when selecting the _Line Chart with C
 
 This visualization has been configured by adding a new _Visualization_ through the Admin interface and setting the entry point to `https://localhost:3443/ciLineChart.js`
 
+In some cases the dev visualization might fail to load with `ERR_CERT_AUTHORITY_INVALID`. This can be fixed by opening `https://localhost:3443/ciLineChart.js` in a browser and accepting the risk that the certificate might not be valid.
+
 ## Installation
 
 To install this plugin in Looker for use in production, go to _Marketplace_ → _Manage_ → _Install via git URL_:
