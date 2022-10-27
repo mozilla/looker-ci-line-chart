@@ -313,7 +313,8 @@ const vis = {
             radius: 0,
             hitRadius: 4,
           }
-        }
+        },
+        spanGaps: true
       });
       cfg.data.datasets.push({
         label: `${optionsToFriendly[config.field_y]} ${groupLabel}`,
@@ -332,7 +333,8 @@ const vis = {
             radius: 0,
             hitRadius: 4,
           }
-        }
+        },
+        spanGaps: true
       });
       cfg.data.datasets.push({
         label: `Upper ${groupLabel}`,
@@ -351,7 +353,8 @@ const vis = {
             radius: 0,
             hitRadius: 4,
           }
-        }
+        },
+        spanGaps: true
       });
     });
 
