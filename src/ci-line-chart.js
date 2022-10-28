@@ -81,6 +81,22 @@ const vis = {
       order: 5,
       default: false,
     },
+    y_bound_min: {
+      section: "Plot",
+      type: "number",
+      label: "Minimum Y Value",
+      display: "number",
+      order: 6,
+      display_size: "half",
+    },
+    y_bound_max: {
+      section: "Plot",
+      type: "number",
+      label: "Maximum Y Value",
+      display: "number",
+      order: 7,
+      display_size: "half",
+    },
     // Series
     color_palette: {
       section: "Series",
@@ -157,6 +173,13 @@ const vis = {
     this.options.field_y.values = measure_options;
     this.options.ci_lower.values = measure_options;
     this.options.ci_upper.values = measure_options;
+
+    if (config.y_bound_min && config.y_bound_max && config.y_bound_min >= config.y_bound_max) {
+      this.addError({
+        title: "Check Config",
+        message: "Invalid Y Axis bounds (Min >= Max).",
+      });
+    }
 
     // TODO: dynamically get the correct fields from the data
     // 	(the user should be able to select these fields from the Gear menu
@@ -255,6 +278,15 @@ const vis = {
         display: config.show_grid
       },
     };
+
+    const yConfig = (config.y_bound_min || config.y_bound_max) ? {
+      min: config.y_bound_min,
+      max: config.y_bound_max,
+      type: config.log_scale ? 'logarithmic' : 'linear',
+    } : {
+      type: config.log_scale ? 'logarithmic' : 'linear',
+    };
+
     // Setup lines for each group
     const cfg = {
       type: 'line',
@@ -266,9 +298,7 @@ const vis = {
       options: {
         scales: {
           x: xConfig,
-          y: {
-            type: config.log_scale ? 'logarithmic' : 'linear',
-          },
+          y: yConfig,
         },
         plugins: {
           legend: {
