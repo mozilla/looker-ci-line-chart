@@ -14,6 +14,7 @@ import {
   SubTitle
 } from 'chart.js';
 import 'chartjs-adapter-luxon';
+import SSF from 'ssf';
 
 Chart.register(
   LineElement,
@@ -81,22 +82,6 @@ const vis = {
       order: 5,
       default: false,
     },
-    y_bound_min: {
-      section: "Plot",
-      type: "number",
-      label: "Minimum Y Value",
-      display: "number",
-      order: 6,
-      display_size: "half",
-    },
-    y_bound_max: {
-      section: "Plot",
-      type: "number",
-      label: "Maximum Y Value",
-      display: "number",
-      order: 7,
-      display_size: "half",
-    },
     // Series
     color_palette: {
       section: "Series",
@@ -116,8 +101,40 @@ const vis = {
         '#073072',
         '#7F165B',
         '#A7341F',
-     ]
-    }
+      ]
+    },
+    // Y
+    y_axis_name: {
+      section: "Y",
+      type: "string",
+      label: "Y Axis Name",
+      display: "text",
+      order: 0,
+    },
+    y_axis_format: {
+      section: "Y",
+      type: "string",
+      label: "Y Axis Format",
+      display: "text",
+      order: 1,
+      placeholder: "0%, 0.00%, $"
+    },
+    y_bound_min: {
+      section: "Y",
+      type: "number",
+      label: "Minimum Y Value",
+      display: "number",
+      order: 2,
+      display_size: "half",
+    },
+    y_bound_max: {
+      section: "Y",
+      type: "number",
+      label: "Maximum Y Value",
+      display: "number",
+      order: 3,
+      display_size: "half",
+    },
   },
 
   create (element, config) {
@@ -279,13 +296,36 @@ const vis = {
       },
     };
 
-    const yConfig = (config.y_bound_min || config.y_bound_max) ? {
-      min: config.y_bound_min,
-      max: config.y_bound_max,
+    const yConfig = {
       type: config.log_scale ? 'logarithmic' : 'linear',
-    } : {
-      type: config.log_scale ? 'logarithmic' : 'linear',
+      title: {
+        text: config.y_axis_name,
+        display: !!config.y_axis_name,
+      },
+      ticks: {
+        callback: (value, _index, _ticks) => {
+          if (!!!config.y_axis_format) {
+            return value;
+          }
+
+          try {
+            return SSF.format(config.y_axis_format, value);
+          } catch (e) {
+            // TODO: can we change the text box to indicate invalid input?
+            this.addError({
+              title: "Invalid Format String",
+              message: "Format Strings using ECMA376 Format Codes",
+            });
+            return value;
+          }
+        }
+      }
     };
+    
+    if (config.y_bound_min || config.y_bound_max) {
+      yConfig.min = config.y_bound_min;
+      yConfig.max = config.y_bound_max;
+    }
 
     // Setup lines for each group
     const cfg = {
