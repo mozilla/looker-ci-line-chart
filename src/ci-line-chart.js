@@ -366,6 +366,8 @@ const vis = {
       const groupData = d3data.filter((d) => d.pivot === group);
       const groupLabel = group !== 'NONE' ? ` - ${group}` : '';
 
+      const pointRadius = groupData.length === 1 ? 3 : 0;
+
       cfg.data.datasets.push({
         label: `Lower ${groupLabel}`,
         data: groupData,
@@ -380,7 +382,7 @@ const vis = {
             borderWidth: 0
           },
           point: {
-            radius: 0,
+            radius: pointRadius,
             hitRadius: 4,
           }
         },
@@ -400,7 +402,7 @@ const vis = {
             borderWidth: 2
           },
           point: {
-            radius: 0,
+            radius: pointRadius,
             hitRadius: 4,
           }
         },
@@ -420,7 +422,7 @@ const vis = {
             borderWidth: 0
           },
           point: {
-            radius: 0,
+            radius: pointRadius,
             hitRadius: 4,
           }
         },
