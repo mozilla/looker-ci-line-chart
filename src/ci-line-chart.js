@@ -149,14 +149,14 @@ const vis = {
 
     // Throw some errors and exit if the shape of the data isn't what this chart needs.
     // TODO: more error checks
-    if (queryResponse.fields.dimensions.length === 0) {
+    if (queryResponse.fields.dimension_like.length === 0) {
       this.addError({
         title: "No Dimensions",
         message: "This chart requires dimensions.",
       });
       return;
     }
-    if (queryResponse.fields.measures.length < 3) {
+    if (queryResponse.fields.measure_like.length < 3) {
       this.addError({
         title: "Not Enough Measures",
         message: "This chart requires 3+ measures (value and lower/upper CI bounds).",
@@ -165,8 +165,8 @@ const vis = {
     }
 
     // Fill in select options based on fields available
-    const dim_options = queryResponse.fields.dimensions.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
-    const measure_options = queryResponse.fields.measures.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
+    const dim_options = queryResponse.fields.dimension_like.map(d => ({ [`${d.label_short}`]: `${d.name}` }));
+    const measure_options = queryResponse.fields.measure_like.map(d => ({ [`${d.label_short ? d.label_short: d.label}`]: `${d.name}` }));
 
     let pivots = [];
     let pivotFieldNames = new Set();
@@ -181,8 +181,12 @@ const vis = {
 
     // create map from full name to friendly/short name for fields
     const optionsToFriendly = {};
-    [...queryResponse.fields.dimensions, ...queryResponse.fields.measures].forEach(d => {
-      optionsToFriendly[d.name] = d.label_short;
+    [...queryResponse.fields.dimension_like, ...queryResponse.fields.measure_like].forEach(d => {
+      if (d.label_short != undefined) {
+        optionsToFriendly[d.name] = d.label_short;
+      } else {
+        optionsToFriendly[d.name] = d.label;
+      }
     });
 
     // setup config options and default values
@@ -213,7 +217,7 @@ const vis = {
       config.ci_lower = config.ci_lower || Object.values(measure_options[1])[0];
       config.ci_upper = config.ci_upper || Object.values(measure_options[2])[0];
     }
-    const xObj = [...queryResponse.fields.dimensions, ...queryResponse.fields.measures].filter(f => f.name === config.field_x);
+    const xObj = [...queryResponse.fields.dimension_like, ...queryResponse.fields.measure_like].filter(f => f.name === config.field_x);
     let xType = "";
     if (xObj.length > 0) {
       xType = xObj[0].type;
